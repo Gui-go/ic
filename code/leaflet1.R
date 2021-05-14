@@ -20,16 +20,13 @@ if(!require(st)){install.packages("st")}
 if(!require(leaflet)){install.packages("leaflet")}
 
 
-br_shp <- sf::st_read("data/BR_Setores_2020/") %>%
-  janitor::clean_names() %>% 
-  sf::st_set_crs(4326)
 
-br_shp_uf <- br_shp %>% 
-  group_by(cd_uf) %>% 
-  summarise()
+source(file = "code/functions/fct_loc.R")
+data_loc('SC')
 
-dim(br_shp)
-
+source(file = "code/functions/fct_shapefile.R")
+sc_sf <- get_sf()
+plot(sc_sf['nm_mun'])
 
 leaflet() %>%
   addTiles() %>%
@@ -40,9 +37,9 @@ leaflet() %>%
 
 
 
-leaflet(neStates) %>%
+leaflet(sc_sf) %>%
   addPolygons(color = "#444444", weight = 1, smoothFactor = 0.5,
               opacity = 1.0, fillOpacity = 0.5,
-              fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
+              # fillColor = ~colorQuantile("YlOrRd", ALAND)(ALAND),
               highlightOptions = highlightOptions(color = "white", weight = 2,
                                                   bringToFront = TRUE))
