@@ -26,22 +26,21 @@ server <- function(input, output){
   
   mongo_credentials <- config::get(file = "conf/globalresources.yml")
   
+  option_estados <- read_csv("data/option_estados.csv")
+  
   output$input_ui_1 <- shiny::renderUI({
     shinyWidgets::pickerInput(
       inputId = "input_server_1",
-      label = "Selecione a região do Brasil",
-      choices = c("Brasil", "Centro-oeste", "Nordeste", "Norte", "Sudeste", "Sul"),
-      # choices = list(
-        # "Centro-oeste", "Nordeste", "Norte", "Sudeste", "Sul"
-      #   "Brasil" = "Brasil", 
-      #   "Centro-Oeste" = "Centro-oeste", 
-      #   "Nordeste" = "Nordeste", 
-      #   "Norte" = "Norte", 
-      #   "Sudeste" = "Sudeste", 
-      #   "Sul" = "Sul"
-      # ),
-      multiple = FALSE,
-      selected = "Brasil"
+      label = "Selecione os estados",
+      choices = list(
+        "Centro-Oeste" = list("Distrito Federal"=53, "Goiás"=52, "Mato Grosso"=51, "Mato Grosso do Sul"=50),
+        "Nordeste" = list("Alagoas"=27, "Bahia"=29, "Ceará"=23, "Maranhão"=21, "Paraíba"=25, "Pernambuco"=26, "Piauí"=22, "Rio Grande do Norte"=24, "Sergipe"=28),
+        "Norte" = list("Acre"=12, "Amapá"=16, "Amazonas"=13, "Pará"=15, "Rondônia"=11, "Roraima"=14, "Tocantins"=17),
+        "Sudeste" = list("Espírito Santo"=32, "Minas Gerais"=31, "Rio de Janeiro"=33, "São Paulo"=35),
+        "Sul" = list("Paraná"=41, "Rio Grande do Sul"=43, "Santa Catarina"=42)
+      ),
+      multiple = T,
+      selected = option_estados$cd_uf
     )
   })
   
@@ -50,14 +49,14 @@ server <- function(input, output){
       inputId = "input_server_2",
       label = "Selecione a divisão territorial",
       choices = list(
-        "Estado" = "uf"
-        "Macrorregião" = "macro", 
+        "Estado" = "uf",
+        "Mesorregião" = "meso", 
         "Intermediária" = "int", 
         "Microrregião" = "micro", 
         "Imediata" = "ime"
       ),
       multiple = FALSE,
-      selected = "micro"
+      selected = "uf"
     )
   })
   
@@ -82,31 +81,46 @@ server <- function(input, output){
   })
   
   # Global variables
-  shp_ufs <- sf::st_read("data/BR_UF_2020/") %>%
+  ## Tratar e salvar prontas localmente :::::::::::::::::;
+  shp_ufs <- sf::st_read("data/shp/BR_UF_2020/") %>%
     janitor::clean_names() %>%
     sf::st_set_crs(4326) %>%
     dplyr::mutate(cd_uf = as.character(cd_uf))
+  
+  shp_meso <- sf::st_read("data/shp/BR_Mesorregioes_2020/") %>%
+    janitor::clean_names() %>%
+    sf::st_set_crs(4326) %>%
+    dplyr::mutate(cd_meso = as.character(cd_meso))
+  
+  shp_micro <- sf::st_read("data/shp/BR_Microrregioes_2020/") %>%
+    janitor::clean_names() %>%
+    sf::st_set_crs(4326) %>%
+    dplyr::mutate(cd_micro = as.character(cd_micro))
   
   # shp_meso
   # shp_int
   # shp_micro
   # shp_ime
   
+  
+  reac_shp <- eventReactive(input$goButton, {
+    switch(input$input_server_2,
+           "uf" = {shp <- shp_ufs},
+           "meso" = {shp <- shp_meso},
+           "micro" = {shp <- shp_micro},
+           stop("Nope")
+    )
+    # shp <- shp_ufs
+    shp_df <- shp %>% 
+      dplyr::filter(cd_uf%in%input$input_server_1)
+  })
+  
+  
   # reac_query pra definir query
   reac_query <- eventReactive(input$goButton, {
     nm_db="db1"; nm_collec = "br_uf_raweci"
     mongo_set <- mongo(db = nm_db, collection = nm_collec, url = mongo_credentials$mongoURL, verbose = TRUE)
     df <- mongo_set$find()
-  })
-  
-  reac_shp <- eventReactive(input$goButton, {
-    # switch(input$input_server_2,
-    #   "uf" = {shp <- shp_ufs},
-    #   "macro" = {shp <- shp_ufs}
-    # )
-    shp <- shp_ufs
-    shp_df <- shp %>% 
-      dplyr::filter(if(input$input_server_1 != "Brasil") (nm_regiao%in%input$input_server_1) else T)
   })
   
   react_df <- eventReactive(input$goButton, {
@@ -118,7 +132,7 @@ server <- function(input, output){
     ggplot(react_df())+
       geom_sf(aes(fill=eci), color="black", size=.2)+
       scale_fill_gradient(low="white", high="blue")+
-      annotate(x = -44.878609, y = -28.916854, geom = "text", label=paste0("M1=", "0.666"))+
+      annotate(x = -44.878609, y = -28.916854, geom = "text", label=paste0("M1=", "0.666 (dinamizar loc)"))+
       labs(title = "Gráfico teste", caption = "eci.app.br", y = "Latitude", x = "Longitude")
   })
   

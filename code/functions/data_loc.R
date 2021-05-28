@@ -14,15 +14,25 @@ data_loc <- function(ufs){
         'nm_micro'='microrregiao_nome',
         'cd_meso'='microrregiao_mesorregiao_id',
         'nm_meso'='microrregiao_mesorregiao_nome',
-        'cd_uf'='microrregiao_mesorregiao_uf_id',
-        'sg_uf'='microrregiao_mesorregiao_uf_sigla',
-        'nm_uf'='microrregiao_mesorregiao_uf_nome',
-        'cd_rg'='microrregiao_mesorregiao_uf_regiao_id',
-        'sg_rg'='microrregiao_mesorregiao_uf_regiao_sigla',
-        'nm_rg'='microrregiao_mesorregiao_uf_regiao_nome'
+        # 'cd_uf'='microrregiao_mesorregiao_uf_id',
+        # 'sg_uf'='microrregiao_mesorregiao_uf_sigla',
+        # 'nm_uf'='microrregiao_mesorregiao_uf_nome',
+        # 'cd_rg'='microrregiao_mesorregiao_uf_regiao_id',
+        # 'sg_rg'='microrregiao_mesorregiao_uf_regiao_sigla',
+        # 'nm_rg'='microrregiao_mesorregiao_uf_regiao_nome',
+        'cd_ime'='regiao_imediata_id',
+        'nm_ime'='regiao_imediata_nome',
+        'cd_int'='regiao_imediata_regiao_intermediaria_id',
+        'nm_int'='regiao_imediata_regiao_intermediaria_nome',
+        'cd_uf'='regiao_imediata_regiao_intermediaria_uf_id',
+        'sg_uf'='regiao_imediata_regiao_intermediaria_uf_sigla',
+        'nm_uf'='regiao_imediata_regiao_intermediaria_uf_nome',
+        'cd_rg'='regiao_imediata_regiao_intermediaria_uf_regiao_id',
+        'sg_rg'='regiao_imediata_regiao_intermediaria_uf_regiao_sigla',
+        'nm_rg'='regiao_imediata_regiao_intermediaria_uf_regiao_nome'
       ) %>% 
       dplyr::mutate('cd_mun'=as.character(cd_mun)) %>% 
-      dplyr::select('cd_mun', 'nm_mun', 'cd_micro', 'nm_micro', 'cd_meso', 'nm_meso', 'cd_uf', 'sg_uf', 'nm_uf', 'cd_rg', 'sg_rg', 'nm_rg')
+      dplyr::select('cd_mun', 'nm_mun', 'cd_micro', 'nm_micro', 'cd_meso', 'nm_meso', 'cd_int', 'nm_int', 'cd_ime', 'nm_ime', 'cd_uf', 'sg_uf', 'nm_uf', 'cd_rg', 'sg_rg', 'nm_rg')
   } else{
     warning('Error: Bad request')
   }
