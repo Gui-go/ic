@@ -52,10 +52,10 @@ server <- function(input, output){
       inputId = "input_server_2",
       label = "Selecione a divisão territorial",
       choices = list(
-        "Estado" = "uf",
-        "Mesorregião" = "meso", 
+        "Estadual" = "uf",
+        "Mesorregional" = "meso", 
+        "Microrregional" = "micro", 
         "Intermediária" = "int", 
-        "Microrregião" = "micro", 
         "Imediata" = "ime"
       ),
       multiple = FALSE,
@@ -64,22 +64,24 @@ server <- function(input, output){
   })
   
   output$input_ui_3 <- shiny::renderUI({
+    choices3 <- as.list(option_stats %>% select(cd_tema) %>% unique() %>% pull())
+    names(choices3) <- option_stats %>% select(nm_tema) %>% unique() %>% pull()
     shinyWidgets::pickerInput(
       inputId = "input_server_3",
       label = "Selecione o tema da análise",
-      choices = list("ECI"="eci", "Educação"="edu", "Exportações"="exp", "Trabalho"="trab"),
-      # choices = option_stats$tema,
+      choices = choices3,
+      # choices = list("ECI"="eci", "Educação"="edu", "Exportações"="exp", "Trabalho"="trab"),
       multiple = FALSE,
       selected = "eci"
     )
   })
   
   output$input_ui_4 <- shiny::renderUI({
-    choices4 <- option_stats %>% filter(tema==input$input_server_3) %>% select(stat) %>% pull()
+    choices4 <- as.list(option_stats %>% filter(cd_tema==input$input_server_3) %>% select(cd_stat) %>% pull())
+    names(choices4) <- option_stats %>% filter(cd_tema==input$input_server_3) %>% select(nm_stat) %>% pull()
     shinyWidgets::pickerInput(
       inputId = "input_server_4",
       label = "Selecione a estatística",
-      # choices = c("Opções encadeadas de acordo com as opções acima", "opcao2"),
       choices = choices4,
       multiple = FALSE,
       selected = choices4[1]
@@ -93,21 +95,18 @@ server <- function(input, output){
     sf::st_set_crs(4326) %>%
     dplyr::mutate(cd_uf = as.character(cd_uf))
   
-  shp_meso <- sf::st_read("data/shp/BR_Mesorregioes_2020/") %>%
-    janitor::clean_names() %>%
-    sf::st_set_crs(4326) %>%
-    dplyr::mutate(cd_meso = as.character(cd_meso))
+  # shp_meso <- sf::st_read("data/shp/BR_Mesorregioes_2020/") %>%
+  #   janitor::clean_names() %>%
+  #   sf::st_set_crs(4326) %>%
+  #   dplyr::mutate(cd_meso = as.character(cd_meso))
+  # 
+  # shp_micro <- sf::st_read("data/shp/BR_Microrregioes_2020/") %>%
+  #   janitor::clean_names() %>%
+  #   sf::st_set_crs(4326) %>%
+  #   dplyr::mutate(cd_micro = as.character(cd_micro))
   
-  shp_micro <- sf::st_read("data/shp/BR_Microrregioes_2020/") %>%
-    janitor::clean_names() %>%
-    sf::st_set_crs(4326) %>%
-    dplyr::mutate(cd_micro = as.character(cd_micro))
-  
-  # shp_meso
   # shp_int
-  # shp_micro
   # shp_ime
-  
   
   reac_shp <- eventReactive(input$goButton, {
     switch(input$input_server_2,
@@ -122,8 +121,6 @@ server <- function(input, output){
 
   reac_query <- eventReactive(input$goButton, {
     mcolec = paste0("db1_", input$input_server_2) # mcolec é referente a escala
-    # print(mcolec)
-    qq <- paste0('{"product" : "eci"}')
     qq <- paste0('{"product" : ', paste0('"', input$input_server_4, '"'), '}')
     mongo_set <- mongolite::mongo(db = "db1", collection = "colec_uf_exp_eci", url = mongo_credentials$mongoURL, verbose = TRUE)
     df <- mongo_set$find(qq)
