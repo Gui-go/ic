@@ -24,9 +24,12 @@ ui <- shiny::fluidPage(
 
 server <- function(input, output){
   
+  library(dplyr)
+  
   mongo_credentials <- config::get(file = "conf/globalresources.yml")
   
-  option_estados <- read_csv("data/option_estados.csv")
+  option_estados <- readr::read_csv("data/option_estados.csv")
+  option_stats <- readr::read_csv("data/option_stats.csv")
   
   output$input_ui_1 <- shiny::renderUI({
     shinyWidgets::pickerInput(
@@ -64,19 +67,22 @@ server <- function(input, output){
     shinyWidgets::pickerInput(
       inputId = "input_server_3",
       label = "Selecione o tema da análise",
-      choices = c("ECI", "Educação", "Exportações", "Trabalho"),
+      choices = list("ECI"="eci", "Educação"="edu", "Exportações"="exp", "Trabalho"="trab"),
+      # choices = option_stats$tema,
       multiple = FALSE,
-      selected = "ECI"
+      selected = "eci"
     )
   })
   
   output$input_ui_4 <- shiny::renderUI({
+    choices4 <- option_stats %>% filter(tema==input$input_server_3) %>% select(stat) %>% pull()
     shinyWidgets::pickerInput(
       inputId = "input_server_4",
       label = "Selecione a estatística",
-      choices = c("Opções encadeadas de acordo com as opções acima", "opcao2"),
+      # choices = c("Opções encadeadas de acordo com as opções acima", "opcao2"),
+      choices = choices4,
       multiple = FALSE,
-      selected = "opcao2"
+      selected = choices4[1]
     )
   })
   
@@ -110,30 +116,30 @@ server <- function(input, output){
            "micro" = {shp <- shp_micro},
            stop("Nope")
     )
-    # shp <- shp_ufs
     shp_df <- shp %>% 
       dplyr::filter(cd_uf%in%input$input_server_1)
   })
-  
-  
-  # reac_query pra definir query
+
   reac_query <- eventReactive(input$goButton, {
-    nm_db="db1"; nm_collec = "br_uf_raweci"
-    mongo_set <- mongo(db = nm_db, collection = nm_collec, url = mongo_credentials$mongoURL, verbose = TRUE)
-    df <- mongo_set$find()
+    mcolec = paste0("db1_", input$input_server_2) # mcolec é referente a escala
+    # print(mcolec)
+    qq <- paste0('{"product" : "eci"}')
+    qq <- paste0('{"product" : ', paste0('"', input$input_server_4, '"'), '}')
+    mongo_set <- mongolite::mongo(db = "db1", collection = "colec_uf_exp_eci", url = mongo_credentials$mongoURL, verbose = TRUE)
+    df <- mongo_set$find(qq)
   })
   
   react_df <- eventReactive(input$goButton, {
-    df_shp <- dplyr::left_join(reac_query(), reac_shp()) %>% sf::st_sf()
+    df_shp <- dplyr::full_join(reac_query(), reac_shp()) %>% 
+      sf::st_sf()
   })
   
   output$plot1 <- shiny::renderPlot({
-    # plot(react_df()["eci"])
-    ggplot(react_df())+
-      geom_sf(aes(fill=eci), color="black", size=.2)+
-      scale_fill_gradient(low="white", high="blue")+
-      annotate(x = -44.878609, y = -28.916854, geom = "text", label=paste0("M1=", "0.666 (dinamizar loc)"))+
-      labs(title = "Gráfico teste", caption = "eci.app.br", y = "Latitude", x = "Longitude")
+    ggplot2::ggplot(react_df())+
+      ggplot2::geom_sf(ggplot2::aes(fill=value), color="black", size=.2)+
+      ggplot2::scale_fill_gradient(low="white", high="blue")+
+      ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
+      ggplot2::theme_void()
   })
   
   

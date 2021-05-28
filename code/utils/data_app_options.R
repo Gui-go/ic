@@ -15,3 +15,13 @@ df <- data.frame("nm_uf"=nm_estados)
 
 
 rio::export(br_loc2, "data/option_estados.csv")
+
+
+
+# option_stats ------------------------------------------------------------
+
+df <- data.frame(
+  "tema"=c("eci", "eci", "eci", "edu", "exp", "exp", "trab"),
+  "stat"=c("eci", "log_eci", "log_eci_log", "edu", "85", "02", "trab")
+)
+rio::export(df, "data/option_stats.csv")
