@@ -35,8 +35,9 @@ if(!require(reticulate)){install.packages("reticulate")}
 # Functions ---------------------------------------------------------------
 
 source(file = "code/functions/data_loc.R")
-sul_loc <- data_loc(c("SC", "PR", "RS"))
-
+# se_loc <- data_loc(c("SP", "MG", "RJ", "ES"))
+nt_loc <- data_loc(c("AC", "AP", "AM", "PA", "RO", "RR", "TO"))
+# se_loc[which(se_loc$sg_uf=="SP"), ]
 
 # Data --------------------------------------------------------------------
 
@@ -51,10 +52,11 @@ tabela3543 <- read_csv("data/tabela3543.csv", skip = 5) %>%
 
 
 # https://www.gov.br/produtividade-e-comercio-exterior/pt-br/assuntos/comercio-exterior/estatisticas/base-de-dados-bruta
+# SP data not available
 exp <- vroom::vroom(file = "data/EXP_2019_MUN.csv") %>% 
   suppressMessages() %>% 
   janitor::clean_names() %>% 
-  dplyr::filter(sg_uf_mun%in%c("SC", "PR", "RS")) %>%
+  dplyr::filter(sg_uf_mun%in%c("AC", "AP", "AM", "PA", "RO", "RR", "TO")) %>%
   dplyr::mutate(exp_fob=if_else(is.na(vl_fob), 0, vl_fob)) %>% 
   dplyr::mutate("cd_sh2" = substr(sh4, 1, 2)) %>%
   # dplyr::filter(cd_sh2==cd_sh2) %>%
@@ -63,7 +65,7 @@ exp <- vroom::vroom(file = "data/EXP_2019_MUN.csv") %>%
   dplyr::mutate(cd_mun=as.character(co_mun)) %>% 
   dplyr::ungroup() %>% 
   dplyr::select(cd_mun, cd_sh2, exp_fob)
-                
+
 sh_table <- read_delim("data/sh_table.csv", 
                        "\"", escape_double = FALSE, col_names = FALSE, 
                        trim_ws = TRUE) %>% 
@@ -77,14 +79,15 @@ shp_micro <- sf::st_read("data/BR_Microrregioes_2020/") %>%
   dplyr::mutate(cd_micro = as.integer(cd_micro))
 # plot(shp_micro['cd_micro'])
 
+
 # Joins -------------------------------------------------------------------
 
-df1 <- dplyr::left_join(sul_loc, tabela3543, by = "cd_mun") %>% 
+df1 <- dplyr::left_join(nt_loc, tabela3543, by = "cd_mun") %>% 
   dplyr::group_by(cd_micro, nm_micro, area) %>% 
   dplyr::summarise(qt_habitantes = sum(qt_habitantes)) %>% 
   dplyr::ungroup()
 
-df2 <- dplyr::left_join(sul_loc, exp, by = "cd_mun") %>% 
+df2 <- dplyr::left_join(nt_loc, exp, by = "cd_mun") %>% 
   dplyr::group_by(cd_micro, nm_micro, cd_sh2) %>% 
   dplyr::summarise(exp = sum(exp_fob)) %>% 
   dplyr::ungroup()
@@ -167,30 +170,23 @@ res_df3 <- dplyr::inner_join(sh_table, res_df2, by = "cd_sh2") %>%
 
 ggplot(melt(res_df3), aes(x=factor(cd_sh2, levels = res_df3$cd_sh2), y=variable, fill=value)) + 
   geom_tile() +
-  scale_fill_gradient(low = "#132B43", high = "#56B1F7")+
-  labs(
-    title = "Matriz das elasticidades educação superior sobre exportações", 
-    y = "Tipo de educação superior",
-    x = "SH2"
-  )
+  scale_fill_gradient(low="red", high="blue")
 
 ggplot(melt(res_df3), aes(x=variable, y=factor(cd_sh2, levels = res_df3$cd_sh2), fill=value)) + 
   geom_tile() +
-  scale_fill_gradient(low = "#132B43", high = "#56B1F7")+
-  labs(
-    title = "Matriz das elasticidades educação superior sobre exportações", 
-    x = "Tipo de educação superior",
-    y = "SH2"
-  )
+  scale_fill_gradient(low="red", high="blue")
+
 
 df_shp <- dplyr::left_join(lista_df[[names(lista_df)[1]]], shp_micro, by = c("cd_micro", "nm_micro")) %>% st_sf()
 # plot(df_shp["residuals"])
 ggplot(df_shp)+
   geom_sf(aes(fill=residuals), color="black", size=.2)+
-  scale_fill_gradient(low = "#132B43", high = "#56B1F7")
+  scale_fill_gradient(low="red", high="blue")
 
 
 res_df3[which(res_df3$cd_sh2==26), "nm_sh2"]
 
 # limpar area vector string to remove accent and spaces
 # plot maps
+
+
