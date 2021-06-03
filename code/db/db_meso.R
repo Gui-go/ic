@@ -35,11 +35,11 @@ if(!require(economiccomplexity)){install.packages("economiccomplexity")}
 # Code --------------------------------------------------------------------
 
 sg_uf_br <- c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO")
-# sg_uf_br <- c("AC", "AL", "AP", "AM")
+# sg_uf_br <- c("RS", "SC", "PR")
 
 source(file = "code/functions/data_loc.R")
 br_loc <- data_loc(sg_uf_br) %>% 
-  select(cd_uf, nm_uf, sg_uf, cd_rg, sg_rg, nm_rg) %>% 
+  # select(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg) %>% 
   distinct()
 
 exp <- vroom::vroom(file = "data/EXP_COMPLETA_MUN/EXP_COMPLETA_MUN.csv") %>% 
@@ -47,81 +47,85 @@ exp <- vroom::vroom(file = "data/EXP_COMPLETA_MUN/EXP_COMPLETA_MUN.csv") %>%
   janitor::clean_names() %>% 
   dplyr::mutate(exp_fob=if_else(is.na(vl_fob), 0, vl_fob)) %>% 
   dplyr::mutate("cd_sh2" = substr(sh4, 1, 2)) %>%
-  dplyr::rename("sg_uf"="sg_uf_mun") %>% 
-  dplyr::group_by(sg_uf, cd_sh2) %>%
+  dplyr::rename(
+    "sg_uf"="sg_uf_mun",
+    "cd_mun"="co_mun"
+  ) %>% 
+  dplyr::group_by(cd_mun, sg_uf, cd_sh2) %>%
   dplyr::summarise(exp = sum(exp_fob)) %>% 
   dplyr::ungroup() %>% 
-  # dplyr::mutate(log_exp = log(exp)) %>% # nao carece
-  dplyr::select(sg_uf, cd_sh2, exp)
+  dplyr::mutate(cd_mun=as.character(cd_mun)) %>% 
+  dplyr::left_join(., br_loc, by = c("cd_mun", "sg_uf")) %>% 
+  na.omit() %>% 
+  dplyr::group_by(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, cd_sh2) %>% 
+  dplyr::summarise(exp = sum(exp)) %>% 
+  dplyr::ungroup()
 
-df <- exp %>%
-  dplyr::left_join(., br_loc, by="sg_uf") %>%
-  dplyr::rename("country"="cd_uf", "product"="cd_sh2", "value"="exp") %>% 
+exp_to_eci <- exp %>%
+  dplyr::rename("country"="cd_meso", "product"="cd_sh2", "value"="exp") %>%
   na.omit()
 
-eci_est <- complexity_measures(balassa_index = economiccomplexity::balassa_index(data = df))$complexity_index_country
+eci_est <- complexity_measures(balassa_index = economiccomplexity::balassa_index(data = exp_to_eci))$complexity_index_country
 
-dff <- df %>%
+dff <- exp_to_eci %>%
   dplyr::rename(
-    "cd_uf"="country", 
+    "cd_meso"="country", 
     "cd_sh2"="product", 
     "exp"="value"
   ) %>% 
-  dplyr::mutate(cd_uf=as.character(cd_uf))
+  dplyr::mutate(cd_meso=as.character(cd_meso))
 
 eci_estdf <- data.frame(
-  cd_uf=names(eci_est),
+  cd_meso=names(eci_est),
   eci=eci_est
 )
 
 df_eci <- dff %>% 
   dplyr::mutate(cd_sh2=paste0("sh", cd_sh2)) %>% 
-  left_join(., eci_estdf, by="cd_uf") %>%
+  left_join(., eci_estdf) %>%
   dplyr::arrange(dplyr::desc(eci)) %>% 
-  dplyr::rename("value"="exp", "product"="cd_sh2") %>% 
-  dplyr::select(cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value, eci)
+  dplyr::rename("value"="exp", "product"="cd_sh2") %>%
+  dplyr::select(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value, eci)
 
 df_eci_m <- df_eci %>% 
   select(-value, -product) %>% 
   mutate(value=eci, product="eci") %>% 
   select(-eci) %>% distinct() %>% arrange(desc(value)) %>% 
-  dplyr::select(cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value)
+  dplyr::select(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value)
 
 df_eci_total <- df_eci %>% 
-  dplyr::group_by(cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg) %>% 
+  dplyr::group_by(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg) %>% 
   dplyr::summarise(value=sum(value)) %>% 
+  dplyr::ungroup() %>% 
   dplyr::mutate(product="sh00") %>% 
   dplyr::select(cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value)
 
 df_eci_exp <- bind_rows(df_eci_m, df_eci %>% select(-eci)) %>% 
-  bind_rows(., df_eci_total)
+  dplyr::bind_rows(., df_eci_total)
 paste0("df_eci_exp tem ", length(unique(df_eci_exp$product)), " produtos distintos")
 unique(df_eci_exp$product)
+
 # Name
-colec_uf_exp_eci <- df_eci_exp
+colec_meso_exp_eci <- df_eci_exp
 
 # Check
-length(unique(colec_uf_exp_eci$cd_uf))*length(unique(colec_uf_exp_eci$product))
+length(unique(colec_meso_exp_eci$cd_uf))*length(unique(colec_meso_exp_eci$product))
 
 # Adicionar 0 nos estados que nao exportaram nada desse produto
 
 # Insert ------------------------------------------------------------------
 
 source(file = "code/functions/fct_insertmongodb.R")
-fmongo_insert(df = colec_uf_exp_eci, nm_db = "db1", nm_collec = "colec_uf_exp_eci")
+fmongo_insert(df = colec_meso_exp_eci, nm_db = "db1", nm_collec = "colec_meso_exp_eci")
 
 
 # try ---------------------------------------------------------------------
 
-shp_uf <- sf::st_read("data/shp/BR_UF_2020/") %>%
-  janitor::clean_names() %>% 
-  sf::st_set_crs(4326) %>% 
-  dplyr::mutate(cd_uf = as.character(cd_uf))
+shp_uf <- sf::st_read("data/shp/shp_meso/")
 
-
-dff_shp <- df_eci_exp %>% 
+dff_shp <- colec_meso_exp_eci %>% 
   dplyr::filter(product=="eci") %>% 
-  dplyr::left_join(., shp_uf, by = c("cd_uf", "nm_uf")) %>% sf::st_sf()
+  dplyr::left_join(., shp_uf) %>% sf::st_sf()
 class(dff_shp)
 plot(dff_shp["value"])
 

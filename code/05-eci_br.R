@@ -30,15 +30,17 @@ if(!require(readxl)){install.packages("readxl")}
 if(!require(reticulate)){install.packages("reticulate")}
 if(!require(economiccomplexity)){install.packages("economiccomplexity")}
 
-
 # Code --------------------------------------------------------------------
 
 sg_uf_br <- c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO")
+# sg_uf_br <- c("SC", "RS", "PR")
 
 source(file = "code/functions/data_loc.R")
+br_loc <- br_loc %>% select(cd_uf, sg_uf, nm_uf, cd_rg, sg_rg, nm_rg) %>% distinct()
 br_loc <- data_loc(sg_uf_br) %>% 
   group_by(nm_uf, cd_uf) %>% 
-  summarise()
+  summarise() %>% 
+  ungroup()
 
 exp <- readxl::read_excel("data/EXP_2000_2021_20210527.xlsx") %>% 
   dplyr::mutate(exp = purrr::reduce(select(., ends_with("(US$)")), `+`)) %>% 
@@ -46,10 +48,7 @@ exp <- readxl::read_excel("data/EXP_2000_2021_20210527.xlsx") %>%
   dplyr::rename("nm_uf"="uf_do_produto", "cd_sh2"="codigo_sh2", "nm_sh2"="descricao_sh2") %>% 
   dplyr::select(nm_uf, cd_sh2, nm_sh2, exp)
 
-shp_ufs <- sf::st_read("data/BR_UF_2020/") %>%
-  janitor::clean_names() %>% 
-  sf::st_set_crs(4326) %>% 
-  dplyr::mutate(cd_uf = as.character(cd_uf))
+shp_ufs <- sf::st_read("data/shp/shp_ufs/")
 
 df <- exp %>%
   dplyr::left_join(., br_loc, by = "nm_uf") %>% 
@@ -84,11 +83,27 @@ nb <- spdep::poly2nb(dff_shp, queen=TRUE)
 lw <- nb2listw(nb, style="W", zero.policy=TRUE)
 m1 <- round(spdep::moran.test(dff_shp$eci, lw)$estimate[[1]], 2)
 
-ggplot(dff_shp)+
-  geom_sf(aes(fill=eci), color="black", size=.2)+
-  scale_fill_gradient(low="white", high="blue")+
-  annotate(x = -44.878609, y = -28.916854, geom = "text", label=paste0("M1=", "0.666"))+
-  labs(title = "Gráfico teste", caption = "eci.app.br", y = "Latitude", x = "Longitude")
+# colnames(dff_shp)
+rownames(dff_shp) <- dff_shp$cd_uf
+
+ggplot(dff_shp, aes(fill=eci, tooltip = paste0("<b>Nome: </b>", nm_uf, "<br/>", "<b>Valor: </b>", round(eci, 3)), data_id = cd_uf))+
+  ggiraph::geom_sf_interactive(color="black", size=.2)+
+  # geom_sf(aes(fill=eci), color="black", size=.2)+
+  scale_fill_gradient(low="white", high="blue")#+
+  # annotate(x = -44.878609, y = -28.916854, geom = "text", label=paste0("M1=", "0.666"))+
+  # labs(title = "Gráfico teste", caption = "eci.app.br", y = "Latitude", x = "Longitude")
+ggiraph::girafe(ggobj = gce)
+
+rownames(dff_shp) <- dff_shp$cd_uf
+gg2 <- ggplot2::ggplot(dff_shp, ggplot2::aes(fill=eci, tooltip=cd_uf, data_id = cd_uf))+
+  ggiraph::geom_sf_interactive(color="black", size=.2)+
+  # ggplot2::geom_sf(color="black", size=.2)+
+  ggplot2::scale_fill_gradient(low="white", high="blue")+
+  ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
+  ggplot2::theme_void()
+ggiraph::girafe(ggobj = gg2)
+
+
 
 # source(file = "code/functions/fct_insertmongodb.R")
 # fmongo_insert(df = ecidf, nm_db = "db1", nm_collec = "br_uf_raweci")
