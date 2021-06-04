@@ -1,4 +1,4 @@
-# R-script 07-plots.R
+# R-script db_uf.R
 
 
 # References --------------------------------------------------------------
@@ -34,30 +34,16 @@ if(!require(economiccomplexity)){install.packages("economiccomplexity")}
 
 # Code --------------------------------------------------------------------
 
-# Set the url path
+NCM_SH <- read_delim("data/NCM_SH.csv", ";", escape_double = FALSE, trim_ws = TRUE)
+names(NCM_SH)
+NCM_SH %>% select(CO_SH2, NO_SH2_POR) %>% distinct() %>% filter(CO_SH2%in%c("95", "96", "97", "98", "99"))
+NCM_SH %>% select(CO_SH2, NO_SH2_POR) %>% distinct() %>% View()
+
+
+
 mongo_credentials <- config::get(file = "conf/globalresources.yml")
-
-# Set db
-mongo_set <- mongo(db = "db1", collection = "colec_meso_exp_eci", url = mongo_credentials$mongoURL, verbose = TRUE)
-
-# Check all collections
-mongo(url = mongo_credentials$mongoURL)$run('{"listCollections":1}')$cursor$firstBatch %>% as_tibble()
-
-# Find df
+mongo_set <- mongo(db = "db1", collection = "colec_uf_exp_eci", url = mongo_credentials$mongoURL, verbose = TRUE)
+# mongo(url = mongo_credentials$mongoURL)$run('{"listCollections":1}')$cursor$firstBatch %>% as_tibble()
 mongo_data <- mongo_set$find()
 
-df1 <- mongo_data %>% filter(product=="eci")
-
-# shp
-shp_ufs <- sf::st_read("data/shp/shp_meso/")
-
-# Join
-dff_shp <- dplyr::left_join(df1, shp_ufs) %>% sf::st_sf()
-class(dff_shp)
-
-
-ggplot2::ggplot(dff_shp, ggplot2::aes(fill=value))+
-  ggplot2::geom_sf(color="black", size=.2)+
-  ggplot2::scale_fill_gradient(low="white", high="blue")+
-  ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
-  ggplot2::theme_void()
+mongo_data %>% filter(nm_uf=="Santa Catarina") %>% arrange(desc(value))

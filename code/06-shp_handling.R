@@ -98,10 +98,50 @@ sf::st_write(shp_meso, "data/shp/shp_meso/shp_meso.shp")
 
 
 
+# shp_micro ---------------------------------------------------------------
 
-# ---------------------------------
+source(file = "code/functions/data_loc.R")
+sg_uf_br <- c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO")
+br_loc <- data_loc(sg_uf_br) %>% 
+  select(cd_micro, cd_uf, sg_uf, cd_rg, sg_rg) %>% 
+  mutate(cd_micro=as.character(cd_micro)) %>% 
+  distinct()
 
-mongo_credentials <- config::get(file = "conf/globalresources.yml")
-colec = paste0("colec_", "meso", "_exp_eci")
-mongo_set <- mongolite::mongo(db = "db1", collection = colec, url = mongo_credentials$mongoURL, verbose = TRUE)
-mongo_set$find()
+shp_micro <- sf::st_read("data/shp/BR_Microrregioes_2020/") %>%
+  janitor::clean_names() %>%
+  sf::st_set_crs(4326) %>%
+  dplyr::mutate(
+    cd_micro = as.character(cd_micro),
+    sg_uf = as.character(sigla_uf)
+  ) %>% dplyr::left_join(., br_loc)
+
+shp_micro <- shp_micro[, c("cd_micro", "nm_micro", "cd_uf", "sg_uf", "cd_rg", "sg_rg")] %>% sf::st_sf()
+
+unlink("data/shp/shp_micro/", recursive = T)
+dir.create("data/shp/shp_micro")
+sf::st_write(shp_micro, "data/shp/shp_micro/shp_micro.shp")
+
+
+# shp_int -----------------------------------------------------------------
+
+source(file = "code/functions/data_loc.R")
+sg_uf_br <- c("AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO")
+br_loc <- data_loc(sg_uf_br) %>% 
+  select(cd_int, cd_uf, sg_uf, cd_rg, sg_rg) %>% 
+  mutate(cd_int=as.character(cd_int)) %>% 
+  distinct()
+
+shp_int <- sf::st_read("data/shp/") %>%
+  janitor::clean_names() %>%
+  sf::st_set_crs(4326) %>%
+  dplyr::mutate(
+    cd_micro = as.character(cd_micro),
+    sg_uf = as.character(sigla_uf)
+  ) %>% dplyr::left_join(., br_loc)
+
+shp_micro <- shp_micro[, c("cd_micro", "nm_micro", "cd_uf", "sg_uf", "cd_rg", "sg_rg")] %>% sf::st_sf()
+
+unlink("data/shp/shp_micro/", recursive = T)
+dir.create("data/shp/shp_micro")
+sf::st_write(shp_micro, "data/shp/shp_micro/shp_micro.shp")
+

@@ -42,7 +42,7 @@ br_loc <- data_loc(sg_uf_br) %>%
   # select(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg) %>% 
   distinct()
 
-exp <- vroom::vroom(file = "data/EXP_COMPLETA_MUN/EXP_COMPLETA_MUN.csv") %>% 
+exp <- vroom::vroom(file = "data/EXP_COMPLETA_MUN2/EXP_COMPLETA_MUN.csv") %>% 
   suppressMessages() %>% 
   janitor::clean_names() %>% 
   dplyr::mutate(exp_fob=if_else(is.na(vl_fob), 0, vl_fob)) %>% 
@@ -53,7 +53,15 @@ exp <- vroom::vroom(file = "data/EXP_COMPLETA_MUN/EXP_COMPLETA_MUN.csv") %>%
   ) %>% 
   dplyr::group_by(cd_mun, sg_uf, cd_sh2) %>%
   dplyr::summarise(exp = sum(exp_fob)) %>% 
-  dplyr::ungroup() %>% 
+  dplyr::ungroup()
+
+# Fixing those dumb ass mistakes
+exp[which(exp$sg_uf=="SP"), "cd_mun"] = exp[which(exp$sg_uf=="SP"), "cd_mun"]+100000 # SP
+exp[which(exp$sg_uf=="GO"), "cd_mun"] = exp[which(exp$sg_uf=="GO"), "cd_mun"]-100000 # GO
+exp[which(exp$sg_uf=="MS"), "cd_mun"] = exp[which(exp$sg_uf=="MS"), "cd_mun"]-200000 # MS
+exp[which(exp$sg_uf=="DF"), "cd_mun"] = exp[which(exp$sg_uf=="DF"), "cd_mun"]-100000 # DF
+
+exp2 <- exp %>% 
   dplyr::mutate(cd_mun=as.character(cd_mun)) %>% 
   dplyr::left_join(., br_loc, by = c("cd_mun", "sg_uf")) %>% 
   na.omit() %>% 
@@ -61,7 +69,7 @@ exp <- vroom::vroom(file = "data/EXP_COMPLETA_MUN/EXP_COMPLETA_MUN.csv") %>%
   dplyr::summarise(exp = sum(exp)) %>% 
   dplyr::ungroup()
 
-exp_to_eci <- exp %>%
+exp_to_eci <- exp2 %>%
   dplyr::rename("country"="cd_meso", "product"="cd_sh2", "value"="exp") %>%
   na.omit()
 
@@ -98,7 +106,7 @@ df_eci_total <- df_eci %>%
   dplyr::summarise(value=sum(value)) %>% 
   dplyr::ungroup() %>% 
   dplyr::mutate(product="sh00") %>% 
-  dplyr::select(cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value)
+  dplyr::select(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value)
 
 df_eci_exp <- bind_rows(df_eci_m, df_eci %>% select(-eci)) %>% 
   dplyr::bind_rows(., df_eci_total)
@@ -121,13 +129,16 @@ fmongo_insert(df = colec_meso_exp_eci, nm_db = "db1", nm_collec = "colec_meso_ex
 
 # try ---------------------------------------------------------------------
 
-shp_uf <- sf::st_read("data/shp/shp_meso/")
+shp_meso <- sf::st_read("data/shp/shp_meso/")
+
+ggplot(shp_meso)+
+  geom_sf(aes(0))
 
 dff_shp <- colec_meso_exp_eci %>% 
   dplyr::filter(product=="eci") %>% 
-  dplyr::left_join(., shp_uf) %>% sf::st_sf()
+  dplyr::left_join(., shp_meso) %>% sf::st_sf()
 class(dff_shp)
 plot(dff_shp["value"])
 
 
-# Tetse -------------------------------------------------------------------
+

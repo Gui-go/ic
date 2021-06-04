@@ -49,7 +49,7 @@ ui <- shinyUI(
             shiny::fluidRow(
               tabsetPanel(
                 tabPanel(title = "geom_sf", shiny::plotOutput(outputId = "plot1")),
-                # tabPanel(title = "geom_sf_interactive", ggiraph::girafeOutput(outputId = "plot2")),
+                tabPanel(title = "geom_sf_interactive", ggiraph::girafeOutput(outputId = "plot2")),
                 tabPanel(title = "density plot", shiny::plotOutput(outputId = "plot3")),
                 tabPanel(title = "Tabela", shiny::tableOutput(outputId = "table1"))
               )
@@ -58,6 +58,7 @@ ui <- shinyUI(
               title = "Detalhes", 
               background = "light-blue", 
               solidHeader = F, 
+              shiny::textOutput("info1"),
               h5("Detailed content, such as max, min, mean, median, sd, M1, ...")
             )
           ),
@@ -110,16 +111,7 @@ server <- function(input, output){
   ##### Dowload series button with zero value to empty regions
   shp_ufs <- sf::st_read("../data/shp/shp_ufs/")
   shp_meso <- sf::st_read("../data/shp/shp_meso/")
-  
-  # shp_meso <- sf::st_read("data/shp/BR_Mesorregioes_2020/") %>%
-  #   janitor::clean_names() %>%
-  #   sf::st_set_crs(4326) %>%
-  #   dplyr::mutate(cd_meso = as.character(cd_meso))
-  # 
-  # shp_micro <- sf::st_read("data/shp/BR_Microrregioes_2020/") %>%
-  #   janitor::clean_names() %>%
-  #   sf::st_set_crs(4326) %>%
-  #   dplyr::mutate(cd_micro = as.character(cd_micro))
+  shp_micro <- sf::st_read("../data/shp/shp_micro/")
   
   # shp_int
   # shp_ime
@@ -203,7 +195,7 @@ server <- function(input, output){
   })
   
   react_df <- shiny::eventReactive(input$goButton, {
-    df_shp <- dplyr::inner_join(
+    df_shp <- dplyr::full_join(
       reac_query(), 
       reac_shp()
     ) %>% sf::st_sf()
@@ -213,21 +205,22 @@ server <- function(input, output){
     print("react_df()")
     dplyr::glimpse(react_df())
     ggplot2::ggplot(react_df())+
+      # ggplot2::geom_sf(ggplot2::aes(0), color="black", size=.13)+
       ggplot2::geom_sf(ggplot2::aes(fill=value), color="black", size=.2)+
       ggplot2::scale_fill_gradient(low="white", high="blue")+
       ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
       ggplot2::theme_void()
   })
   
-  output$plot2 <- ggiraph::renderGirafe({
+  output$plot2 <- ggiraph::renderGirafe({ # CSS Loader
     dfr1 <- react_df()
-    rownames(dfr1) <- dfr1$cd_uf
+    rownames(dfr1) <- dfr1$cd_meso
     gg2 <- ggplot2::ggplot(
       dfr1, 
       ggplot2::aes(
         fill=dfr1$value, 
-        tooltip=dfr1$cd_uf, 
-        data_id=dfr1$cd_uf
+        tooltip=dfr1$cd_meso, 
+        data_id=dfr1$cd_meso
       )
     )+
       ggiraph::geom_sf_interactive(color="black", size=.2)+
@@ -239,9 +232,21 @@ server <- function(input, output){
   
   output$plot3 <- shiny::renderPlot({
     dfr1 <- react_df()
-    ggplot(dfr1)+
-      geom_density(aes(value))+
-      theme_void()
+    ggplot2::ggplot(dfr1)+
+      ggplot2::geom_density(aes(value))+
+      ggplot2::theme_void()
+  })
+  
+  output$info1 <- shiny::renderText({
+    vl <- reac_query()$value
+    paste0(
+      "Média: ", round(mean(vl), 3), "; ",
+      "Mediana: ", round(median(vl), 3), "; ",
+      "Desvio Padrão: ", round(sd(vl), 3), "; ",
+      "Variância: ", round(var(vl), 3), "; ",
+      "Máximo: ", round(max(vl), 3), "; ",
+      "Mínimo: ", round(min(vl), 3)
+    )
   })
   
   output$table1 <- shiny::renderTable({
