@@ -1,3 +1,9 @@
-# Diário de análise:
+docker build -t ic-shiny-app-v1 .
 
-# 20210302 - initialization of repository
+docker run --rm -p 3838:3838 ic-shiny-app-v1
+
+
+
+
+
+

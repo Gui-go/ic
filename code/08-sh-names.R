@@ -39,8 +39,6 @@ names(NCM_SH)
 NCM_SH %>% select(CO_SH2, NO_SH2_POR) %>% distinct() %>% filter(CO_SH2%in%c("95", "96", "97", "98", "99"))
 NCM_SH %>% select(CO_SH2, NO_SH2_POR) %>% distinct() %>% View()
 
-
-
 mongo_credentials <- config::get(file = "conf/globalresources.yml")
 mongo_set <- mongo(db = "db1", collection = "colec_uf_exp_eci", url = mongo_credentials$mongoURL, verbose = TRUE)
 # mongo(url = mongo_credentials$mongoURL)$run('{"listCollections":1}')$cursor$firstBatch %>% as_tibble()
