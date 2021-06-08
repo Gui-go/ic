@@ -1,4 +1,4 @@
-# R-script db_meso.R
+# R-script db_rgint.R
 
 
 # References --------------------------------------------------------------
@@ -38,18 +38,18 @@ mongo_credentials <- config::get(file = "conf/globalresources.yml")
 mongo_set <- mongo(db = "db1", collection = "colec_mun", url = mongo_credentials$mongoURL, verbose = TRUE)
 colec_mun <- mongo_set$find()
 
-colec_meso <- colec_mun %>% 
-  dplyr::group_by(cd_meso, nm_meso, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product) %>% 
+colec_rgint <- colec_mun %>% 
+  dplyr::group_by(cd_rgint, nm_rgint, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product) %>% 
   dplyr::summarise(value=sum(value)) %>% 
   dplyr::ungroup()
 
 source(file = "code/functions/fct_add_eci.R")
-df_meso <- fct_add_eci(df = colec_meso, cd_ref = "cd_meso")
+df_rgint <- fct_add_eci(df = colec_rgint, cd_ref = "cd_rgint")
 
 
 # Insert ------------------------------------------------------------------
 
 source(file = "code/functions/fct_insertmongodb.R")
-fmongo_insert(df = df_meso, nm_db = "db1", nm_collec = "colec_meso")
+fmongo_insert(df = df_rgint, nm_db = "db1", nm_collec = "colec_rgint")
 
 

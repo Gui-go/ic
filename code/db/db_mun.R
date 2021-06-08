@@ -64,22 +64,35 @@ exp2 <- exp %>%
   dplyr::mutate(cd_mun=as.character(cd_mun)) %>% 
   dplyr::left_join(., br_loc, by = c("cd_mun", "sg_uf")) %>% 
   na.omit() %>% 
-  dplyr::select(cd_mun, nm_mun, cd_meso, nm_meso, cd_int, nm_int, cd_micro, nm_micro, cd_ime, nm_ime, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, cd_sh2, exp)
+  dplyr::select(cd_mun, nm_mun, cd_meso, nm_meso, cd_rgint, nm_rgint, cd_micro, nm_micro, cd_rgime, nm_rgime, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, cd_sh2, exp)
 
 exp_t <- exp2 %>% 
   dplyr::group_by(cd_mun, sg_uf) %>% 
   dplyr::summarise(exp=sum(exp)) %>% 
   dplyr::ungroup() %>% 
-  dplyr::mutate(cd_sh2="00") %>% 
+  dplyr::mutate(cd_sh2="00") %>%
   dplyr::left_join(., br_loc, by = c("cd_mun", "sg_uf")) %>% 
-  dplyr::select(cd_mun, nm_mun, cd_meso, nm_meso, cd_int, nm_int, cd_micro, nm_micro, cd_ime, nm_ime, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, cd_sh2, exp)
+  dplyr::select(cd_mun, nm_mun, cd_meso, nm_meso, cd_rgint, nm_rgint, cd_micro, nm_micro, cd_rgime, nm_rgime, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, cd_sh2, exp)
 
-exp_f <- bind_rows(exp2, exp_t)
-
+colec_mun <- dplyr::bind_rows(exp2, exp_t) %>% 
+  dplyr::mutate(
+    cd_mun=as.character(cd_mun),
+    cd_meso=as.character(cd_meso),
+    cd_rgint=as.character(cd_rgint),
+    cd_micro=as.character(cd_micro),
+    cd_rgime=as.character(cd_rgime),
+    cd_uf=as.character(cd_uf),
+    cd_rg=as.character(cd_rg),
+    product=cd_sh2,
+    value=exp
+  ) %>%
+  dplyr::select(cd_mun, nm_mun, cd_meso, nm_meso, cd_rgint, nm_rgint, cd_micro, nm_micro, cd_rgime, nm_rgime, cd_uf, nm_uf, sg_uf, cd_rg, nm_rg, sg_rg, product, value)
+  
+# add SH string to exports
 
 # Insert ------------------------------------------------------------------
 
 source(file = "code/functions/fct_insertmongodb.R")
-fmongo_insert(df = colec_meso_exp_eci, nm_db = "db1", nm_collec = "colec_mun")
+fmongo_insert(df = colec_mun, nm_db = "db1", nm_collec = "colec_mun")
 
 

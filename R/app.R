@@ -1,4 +1,4 @@
-# rm(list = ls())
+rm(list = ls())
 library(shiny)
 library(dplyr)
 
@@ -129,13 +129,11 @@ server <- function(input, output){
   ### insert into a list
   #### Check GEOjson in mongoDB performance
   ##### Dowload series button with zero value to empty regions
-  shp_ufs <- sf::st_read("../data/shp/shp_ufs/")
+  shp_uf <- sf::st_read("../data/shp/shp_uf/")
   shp_meso <- sf::st_read("../data/shp/shp_meso/")
+  shp_rgint <- sf::st_read("../data/shp/shp_rgint/")
   shp_micro <- sf::st_read("../data/shp/shp_micro/")
-  
-  # shp_int
-  # shp_ime
-  
+  shp_rgime <- sf::st_read("../data/shp/shp_rgime/")
   
   output$input_ui_1 <- shiny::renderUI({
     choices1 <- as.list(option_loc %>% select(sg_rg) %>% unique() %>% pull())
@@ -157,8 +155,8 @@ server <- function(input, output){
         "Estadual" = "uf",
         "Mesorregional" = "meso", 
         "Microrregional" = "micro", 
-        "Intermediária" = "int", 
-        "Imediata" = "ime"
+        "Intermediária" = "rgint", 
+        "Imediata" = "rgime"
       ),
       multiple = FALSE,
       selected = "uf"
@@ -191,9 +189,11 @@ server <- function(input, output){
   
   reac_shp <- eventReactive(input$goButton, {
     switch(input$input_server_2,
-           "uf" = {shp_df <- shp_ufs},
+           "uf" = {shp_df <- shp_uf},
            "meso" = {shp_df <- shp_meso},
+           "rgint" = {shp_df <- shp_rgint},
            "micro" = {shp_df <- shp_micro},
+           "rgime" = {shp_df <- shp_rgime},
            stop("Nope")
     )
     if(input$input_server_1!="BR"){
@@ -204,7 +204,7 @@ server <- function(input, output){
   })
 
   reac_query <- shiny::eventReactive(input$goButton, {
-    colec = paste0("colec_", input$input_server_2, "_exp_eci")
+    colec = paste0("colec_", input$input_server_2)
     mongo_set <- mongolite::mongo(db = "db1", collection = colec, url = mongo_credentials$mongoURL, verbose = TRUE)
     df <- mongo_set$find(paste0('{"product" : ', paste0('"', input$input_server_4, '"'), '}'))
     if(input$input_server_1!="BR"){ # melhorar com vars() depois
