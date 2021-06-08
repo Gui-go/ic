@@ -129,9 +129,9 @@ server <- function(input, output){
   ### insert into a list
   #### Check GEOjson in mongoDB performance
   ##### Dowload series button with zero value to empty regions
-  # shp_ufs <- sf::st_read("./data/shp/shp_ufs/")
-  # shp_meso <- sf::st_read("./data/shp/shp_meso/")
-  # shp_micro <- sf::st_read("./data/shp/shp_micro/")
+  shp_ufs <- sf::st_read("../data/shp/shp_ufs/")
+  shp_meso <- sf::st_read("../data/shp/shp_meso/")
+  shp_micro <- sf::st_read("../data/shp/shp_micro/")
   
   # shp_int
   # shp_ime
@@ -189,86 +189,86 @@ server <- function(input, output){
     )
   })
   
-  # reac_shp <- eventReactive(input$goButton, {
-  #   switch(input$input_server_2,
-  #          "uf" = {shp_df <- shp_ufs},
-  #          "meso" = {shp_df <- shp_meso},
-  #          "micro" = {shp_df <- shp_micro},
-  #          stop("Nope")
-  #   )
-  #   if(input$input_server_1!="BR"){
-  #     shp_df <- shp_df %>%
-  #       dplyr::filter(sg_rg==input$input_server_1)
-  #   } else {shp_df}
-  #   shp_df
-  # })
-  # 
-  # reac_query <- shiny::eventReactive(input$goButton, {
-  #   colec = paste0("colec_", input$input_server_2, "_exp_eci")
-  #   mongo_set <- mongolite::mongo(db = "db1", collection = colec, url = mongo_credentials$mongoURL, verbose = TRUE)
-  #   df <- mongo_set$find(paste0('{"product" : ', paste0('"', input$input_server_4, '"'), '}'))
-  #   if(input$input_server_1!="BR"){ # melhorar com vars() depois
-  #     df <- df %>%
-  #       dplyr::filter(sg_rg==input$input_server_1)
-  #   } else {df}
-  #   df
-  # })
-  # 
-  # react_df <- shiny::eventReactive(input$goButton, {
-  #   df_shp <- dplyr::full_join(
-  #     reac_query(), 
-  #     reac_shp()
-  #   ) %>% sf::st_sf()
-  # })
-  # 
-  # output$plot1 <- shiny::renderPlot({
-  #   ggplot2::ggplot(react_df())+
-  #     # ggplot2::geom_sf(ggplot2::aes(0), color="black", size=.13)+
-  #     ggplot2::geom_sf(ggplot2::aes(fill=value), color="black", size=.2)+
-  #     ggplot2::scale_fill_gradient(low="white", high="blue")+
-  #     ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
-  #     ggplot2::theme_void()
-  # })
-  # 
-  # output$plot2 <- ggiraph::renderGirafe({ # CSS Loader
-  #   dfr1 <- react_df()
-  #   rownames(dfr1) <- dfr1$cd_meso
-  #   gg2 <- ggplot2::ggplot(dfr1, 
-  #     ggplot2::aes(
-  #       fill=dfr1$value, 
-  #       tooltip=dfr1$cd_meso, 
-  #       data_id=dfr1$cd_meso
-  #     )
-  #   )+
-  #     ggiraph::geom_sf_interactive(color="black", size=.2)+
-  #     ggplot2::scale_fill_gradient(low="white", high="blue")+
-  #     ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
-  #     ggplot2::theme_void()
-  #   ggiraph::girafe(ggobj = gg2)
-  # })
-  # 
-  # output$plot3 <- shiny::renderPlot({
-  #   dfr1 <- react_df()
-  #   ggplot2::ggplot(dfr1)+
-  #     ggplot2::geom_density(aes(value))+
-  #     ggplot2::theme_void()
-  # })
-  # 
-  # output$info1 <- shiny::renderText({
-  #   vl <- reac_query()$value
-  #   paste0(
-  #     "Média: ", round(mean(vl), 3), "; ",
-  #     "Mediana: ", round(median(vl), 3), "; ",
-  #     "Desvio Padrão: ", round(sd(vl), 3), "; ",
-  #     "Variância: ", round(var(vl), 3), "; ",
-  #     "Máximo: ", round(max(vl), 3), "; ",
-  #     "Mínimo: ", round(min(vl), 3)
-  #   )
-  # })
-  # 
-  # output$table1 <- shiny::renderTable({
-  #   reac_query()
-  # })
+  reac_shp <- eventReactive(input$goButton, {
+    switch(input$input_server_2,
+           "uf" = {shp_df <- shp_ufs},
+           "meso" = {shp_df <- shp_meso},
+           "micro" = {shp_df <- shp_micro},
+           stop("Nope")
+    )
+    if(input$input_server_1!="BR"){
+      shp_df <- shp_df %>%
+        dplyr::filter(sg_rg==input$input_server_1)
+    } else {shp_df}
+    shp_df
+  })
+
+  reac_query <- shiny::eventReactive(input$goButton, {
+    colec = paste0("colec_", input$input_server_2, "_exp_eci")
+    mongo_set <- mongolite::mongo(db = "db1", collection = colec, url = mongo_credentials$mongoURL, verbose = TRUE)
+    df <- mongo_set$find(paste0('{"product" : ', paste0('"', input$input_server_4, '"'), '}'))
+    if(input$input_server_1!="BR"){ # melhorar com vars() depois
+      df <- df %>%
+        dplyr::filter(sg_rg==input$input_server_1)
+    } else {df}
+    df
+  })
+
+  react_df <- shiny::eventReactive(input$goButton, {
+    df_shp <- dplyr::full_join(
+      reac_query(),
+      reac_shp()
+    ) %>% sf::st_sf()
+  })
+
+  output$plot1 <- shiny::renderPlot({
+    ggplot2::ggplot(react_df())+
+      # ggplot2::geom_sf(ggplot2::aes(0), color="black", size=.13)+
+      ggplot2::geom_sf(ggplot2::aes(fill=value), color="black", size=.2)+
+      ggplot2::scale_fill_gradient(low="white", high="blue")+
+      ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
+      ggplot2::theme_void()
+  })
+
+  output$plot2 <- ggiraph::renderGirafe({ # CSS Loader
+    dfr1 <- react_df()
+    rownames(dfr1) <- dfr1$cd_meso
+    gg2 <- ggplot2::ggplot(dfr1,
+      ggplot2::aes(
+        fill=dfr1$value,
+        tooltip=dfr1$cd_meso,
+        data_id=dfr1$cd_meso
+      )
+    )+
+      ggiraph::geom_sf_interactive(color="black", size=.2)+
+      ggplot2::scale_fill_gradient(low="white", high="blue")+
+      ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
+      ggplot2::theme_void()
+    ggiraph::girafe(ggobj = gg2)
+  })
+
+  output$plot3 <- shiny::renderPlot({
+    dfr1 <- react_df()
+    ggplot2::ggplot(dfr1)+
+      ggplot2::geom_density(aes(value))+
+      ggplot2::theme_void()
+  })
+
+  output$info1 <- shiny::renderText({
+    vl <- reac_query()$value
+    paste0(
+      "Média: ", round(mean(vl), 3), "; ",
+      "Mediana: ", round(median(vl), 3), "; ",
+      "Desvio Padrão: ", round(sd(vl), 3), "; ",
+      "Variância: ", round(var(vl), 3), "; ",
+      "Máximo: ", round(max(vl), 3), "; ",
+      "Mínimo: ", round(min(vl), 3)
+    )
+  })
+
+  output$table1 <- shiny::renderTable({
+    reac_query()
+  })
   
   output$authors_test <- renderUI({
     df <- data.frame("a"=c("gui", "ori"), "b"=c("viegas", "ortiz"))

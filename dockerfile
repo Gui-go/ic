@@ -35,6 +35,9 @@ RUN R -e "install.packages(c('ggplot2'))" # viz libs
 RUN R -e "install.packages(c('shinydashboard'))"
 RUN R -e "install.packages(c('config'))"
 RUN R -e "install.packages(c('shinyWidgets'))"
+RUN R -e "install.packages(c('sf'))"
+RUN R -e "install.packages(c('ggiraph'))"
+RUN R -e "install.packages(c('mongolite'))"
 
 
 # copy necessary files
@@ -42,6 +45,7 @@ RUN R -e "install.packages(c('shinyWidgets'))"
 COPY ./R ./R
 COPY ./conf ./conf
 COPY ./data/options ./data/options
+COPY ./data/shp ./data/shp
 # RUN mkdir -p ~/R
 # COPY ./R ./app/R/
 ## renv.lock file

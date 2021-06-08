@@ -7,7 +7,7 @@ docker ps
 ls
 
 docker build -t ic-shiny-app:v1 .
-docker run -d -p 3838:3838 ic-shiny-app-v1
+docker run -d -p 3838:3838 ic-shiny-app:v1
 
 docker tag ic-shiny-app:v1 guigo13/ic-shiny-app:v1
 docker push guigo13/ic-shiny-app:v1
@@ -16,7 +16,7 @@ docker push guigo13/ic-shiny-app:v1
 
 # in gcloud
 docker pull guigo13/ic-shiny-app:v1
-docker tag ic-shiny-app:v1 gcr.io/icgvdhv1/ic-shiny-app:v1
+docker tag guigo13/ic-shiny-app:v1 gcr.io/icgvdhv1/ic-shiny-app:v1
 docker push gcr.io/icgvdhv1/ic-shiny-app:v1
 
 
