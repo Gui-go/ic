@@ -27,60 +27,105 @@ source(file = "code/functions/fct_normalize.R")
 # Code --------------------------------------------------------------------
 
 
-fct_add_eci <- function(df, cd_ref){
+fct_add_eci <- function(df, cd_org){
 
   df2 <- df %>%
-    dplyr::rename("country"=cd_ref) %>%
+    dplyr::rename("country"=cd_org) %>%
     stats::na.omit()
   
-  eci_est <- economiccomplexity::complexity_measures(
-    balassa_index = economiccomplexity::balassa_index(data = df2)
+  eci_est_fit <- economiccomplexity::complexity_measures(
+    balassa_index = economiccomplexity::balassa_index(data = df2), 
+    method = "fitness"
   )$complexity_index_country
   
-  eci_estdf <- 
+  eci_est_ref <- economiccomplexity::complexity_measures(
+    balassa_index = economiccomplexity::balassa_index(data = df2), 
+    method = "reflections"
+  )$complexity_index_country
+  
+  eci_estdf_fit <- 
     data.frame(
-      cd_ref=names(eci_est),
-      product="eci",
-      value=as.numeric(eci_est)
+      cd_org=names(eci_est_fit),
+      product="eci_fit",
+      value=as.numeric(eci_est_fit)
     ) %>% 
     dplyr::select( # for renaming dynamically
-      !!dplyr::quo_name(cd_ref):="cd_ref",
+      !!dplyr::quo_name(cd_org):="cd_org",
       dplyr::everything()
     ) %>% 
     dplyr::left_join(
       ., 
       df %>% dplyr::select(-product, -value) %>% dplyr::distinct(), 
-      by=cd_ref
+      by=cd_org
     ) %>% 
     dplyr::arrange(desc(value)) %>% 
     dplyr::select(names(df))
   
-  eci_estdf_norm <- 
+  eci_estdf_fit_norm <- 
     data.frame(
-      cd_ref=names(eci_est),
-      product="eci_norm",
-      value=normalize(as.numeric(eci_est))
+      cd_org=names(eci_est_fit),
+      product="eci_fit_norm",
+      value=normalize(as.numeric(eci_est_fit))
     ) %>%
     dplyr::select( # for renaming dynamically
-      !!dplyr::quo_name(cd_ref):="cd_ref",
+      !!dplyr::quo_name(cd_org):="cd_org",
       dplyr::everything()
     ) %>%
     dplyr::left_join(
       ., 
       df %>% dplyr::select(-product, -value) %>% dplyr::distinct(), 
-      by=cd_ref
+      by=cd_org
+    ) %>% 
+    dplyr::arrange(desc(value)) %>% 
+    dplyr::select(names(df))
+
+  eci_estdf_ref <- 
+    data.frame(
+      cd_org=names(eci_est_ref),
+      product="eci_ref",
+      value=as.numeric(eci_est_ref)
+    ) %>% 
+    dplyr::select( # for renaming dynamically
+      !!dplyr::quo_name(cd_org):="cd_org",
+      dplyr::everything()
+    ) %>% 
+    dplyr::left_join(
+      ., 
+      df %>% dplyr::select(-product, -value) %>% dplyr::distinct(), 
+      by=cd_org
     ) %>% 
     dplyr::arrange(desc(value)) %>% 
     dplyr::select(names(df))
   
+  eci_estdf_ref_norm <- 
+    data.frame(
+      cd_org=names(eci_est_ref),
+      product="eci_ref_norm",
+      value=normalize(as.numeric(eci_est_ref))
+    ) %>%
+    dplyr::select( # for renaming dynamically
+      !!dplyr::quo_name(cd_org):="cd_org",
+      dplyr::everything()
+    ) %>%
+    dplyr::left_join(
+      ., 
+      df %>% dplyr::select(-product, -value) %>% dplyr::distinct(), 
+      by=cd_org
+    ) %>% 
+    dplyr::arrange(desc(value)) %>% 
+    dplyr::select(names(df))
+  
+    
   df3 <- df2 %>%
     dplyr::select( # for renaming dynamically
-      !!dplyr::quo_name(cd_ref):="country",
+      !!dplyr::quo_name(cd_org):="country",
       dplyr::everything()
     ) %>% 
     dplyr::select(names(df)) %>% 
-    dplyr::bind_rows(., eci_estdf) %>% 
-    dplyr::bind_rows(., eci_estdf_norm)
+    dplyr::bind_rows(., eci_estdf_fit) %>% 
+    dplyr::bind_rows(., eci_estdf_fit_norm) %>% 
+    dplyr::bind_rows(., eci_estdf_ref) %>% 
+    dplyr::bind_rows(., eci_estdf_ref_norm)
   
   return(df3)
   

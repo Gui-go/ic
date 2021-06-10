@@ -57,7 +57,7 @@ df <- exp %>%
   na.omit()
 
 bain <- economiccomplexity::balassa_index(data = df)
-cmbain <- complexity_measures(balassa_index = bain)
+cmbain <- economiccomplexity::complexity_measures(balassa_index = bain)
 # cmbain$complexity_index_country
 
 dff <- df %>%
