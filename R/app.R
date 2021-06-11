@@ -67,10 +67,10 @@ ui <- shinyUI(
             width = 8,
             shiny::fluidRow(
               shiny::tabsetPanel(
-                shiny::tabPanel(title = "geom_sf", shiny::plotOutput(outputId = "plot1")),
-                # shiny::tabPanel(title = "geom_sf_interactive", ggiraph::girafeOutput(outputId = "plot2")),
-                shiny::tabPanel(title = "density plot", shiny::plotOutput(outputId = "plot3")),
-                shiny::tabPanel(title = "Tabela", shiny::tableOutput(outputId = "table1"))
+                shiny::tabPanel(title = "geom_sf", shiny::plotOutput(outputId = "plot1") %>% shinycssloaders::withSpinner()),
+                # shiny::tabPanel(title = "geom_sf_interactive", ggiraph::girafeOutput(outputId = "plot2") %>% shinycssloaders::withSpinner()),
+                shiny::tabPanel(title = "density plot", shiny::plotOutput(outputId = "plot3") %>% shinycssloaders::withSpinner()),
+                shiny::tabPanel(title = "Tabela", DT::dataTableOutput(outputId = "table1") %>% shinycssloaders::withSpinner())
               )
             ),
             shinydashboard::box(
@@ -225,26 +225,26 @@ server <- function(input, output){
   })
 
   output$plot2 <- ggiraph::renderGirafe({ # CSS Loader
-    dfr1 <- react_df()
-    rownames(dfr1) <- dfr1$cd_meso
-    gg2 <- ggplot2::ggplot(dfr1,
-      ggplot2::aes(
-        fill=dfr1$value,
-        tooltip=dfr1$cd_meso,
-        data_id=dfr1$cd_meso
-      )
-    )+
-      ggiraph::geom_sf_interactive(color="black", size=.2)+
-      ggplot2::scale_fill_gradient(low="white", high="blue")+
-      ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
-      ggplot2::theme_void()
-    ggiraph::girafe(ggobj = gg2)
+    # dfr1 <- react_df()
+    # rownames(dfr1) <- dfr1$cd_meso
+    # gg2 <- ggplot2::ggplot(dfr1,
+    #   ggplot2::aes(
+    #     fill=dfr1$value,
+    #     tooltip=dfr1$cd_meso,
+    #     data_id=dfr1$cd_meso
+    #   )
+    # )+
+    #   ggiraph::geom_sf_interactive(color="black", size=.2)+
+    #   ggplot2::scale_fill_gradient(low="white", high="blue")+
+    #   ggplot2::labs(title = "", caption = "", y = "Latitude", x = "Longitude")+
+    #   ggplot2::theme_void()
+    # ggiraph::girafe(ggobj = gg2)
   })
 
   output$plot3 <- shiny::renderPlot({
     dfr1 <- react_df()
     ggplot2::ggplot(dfr1)+
-      ggplot2::geom_density(aes(value))+
+      ggplot2::geom_density(ggplot2::aes(value))+
       ggplot2::theme_void()
   })
 
@@ -260,7 +260,7 @@ server <- function(input, output){
     # )
   })
 
-  output$table1 <- shiny::renderTable({
+  output$table1 <- DT::renderDataTable({
     reac_query()
   })
   
