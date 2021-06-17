@@ -34,9 +34,14 @@ ui <- shinyUI(
       shiny::tabPanel(
         title = "Membros",
         value = "members",
-        shiny::br(),
-        shiny::h3("Aqui iremos apresentar os integrantes do grupo"),
-        shiny::uiOutput(outputId = "authors_test")
+        shiny::fluidPage(
+          shiny::column(
+            width = 10, offset = 1,
+            shiny::h3("O grupo é constituído dos seguintes integrantes:"),
+            shiny::br(),
+            shiny::uiOutput(outputId = "authors_test") %>% shinycssloaders::withSpinner()
+          ),
+        )
       ),
       
       
@@ -45,7 +50,7 @@ ui <- shinyUI(
         value = "app",
         shiny::fluidPage(
           shiny::column(
-            width = 2,
+            width = 3,
             shiny::fluidRow(
               shiny::br(),
               shiny::uiOutput(outputId = "input_ui_1"),
@@ -64,7 +69,7 @@ ui <- shinyUI(
           ),
           shiny::column(width = 1),
           shiny::column(
-            width = 8,
+            width = 7,
             shiny::fluidRow(
               shiny::tabsetPanel(
                 shiny::tabPanel(title = "geom_sf", shiny::plotOutput(outputId = "plot1") %>% shinycssloaders::withSpinner()),
@@ -184,7 +189,7 @@ server <- function(input, output){
       label = "Selecione a estatística",
       choices = choices4,
       multiple = FALSE,
-      selected = choices4[1]
+      selected = choices4[2]
     )
   })
   
@@ -265,12 +270,12 @@ server <- function(input, output){
   })
   
   output$authors_test <- shiny::renderUI({
-    df <- data.frame("a"=c("gui", "ori"), "b"=c("viegas", "ortiz"))
-    num=2
-    lapply(1:num, function(i) {
+    df <- data.frame("nome"=c("Dominik Hartmann", "Guilherme Viegas"), "title"=c("Diretor", "TechLead"))
+    lapply(1:nrow(df), function(i) {
       shiny::div(
-        shiny::h4(df[i, 1]), 
-        shiny::h5(df[i, 2])
+        shiny::h4(df[i, "nome"]), 
+        shiny::h5(df[i, "title"]),
+        shiny::br()
       )
     })
   })

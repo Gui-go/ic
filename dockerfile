@@ -38,10 +38,8 @@ RUN R -e "install.packages(c('shinyWidgets'))"
 RUN R -e "install.packages(c('sf'))"
 RUN R -e "install.packages(c('ggiraph'))"
 RUN R -e "install.packages(c('mongolite'))"
-
-shinycssloaders
-DT
-
+RUN R -e "install.packages(c('shinycssloaders'))"
+RUN R -e "install.packages(c('DT'))"
 
 # copy necessary files
 ## app folder
